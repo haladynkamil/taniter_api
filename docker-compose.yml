@@ -1,0 +1,45 @@
+services:
+#  taniterdb:
+#    container_name: taniter_db
+#    image: postgres:14.3
+#    #command: postgres -p 5442 -c config_file=/etc/postgresql/postgresql.conf
+#    restart: unless-stopped
+#    expose:
+#      - "5342"
+#    ports:
+#      - 5432:5432
+#    environment:
+#      POSTGRES_PASSWORD: example
+#    volumes:
+#      - ./volumes/db/data:/var/lib/postgresql/data
+#      - ./volumes/db/init:/docker-entrypoint-initdb.d
+  taniterdb:
+    container_name: taniterdb
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres:/data/postgres
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    restart: always
+
+
+  taniter_api:
+    build: ./src
+    depends_on:
+      - "taniterdb"
+    command: uvicorn app.main:app --reload --workers 16 --host 0.0.0.0 --port 8008
+    container_name: taniter_api
+#    network_mode: host
+    volumes:
+      - ./src:/src
+    ports:
+      - 8008:8008
+
+volumes:
+  postgres:
