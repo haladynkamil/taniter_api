@@ -1,7 +1,7 @@
 from .database import Base
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Date, Float
 from sqlalchemy.orm import relationship
-
+from sqlalchemy.schema import UniqueConstraint
 class User(Base):
     __tablename__ = "users"
 
@@ -25,4 +25,4 @@ class Result(Base):
     intestines_fat = Column(Integer)
     kcal = Column(Integer)
     owner = relationship("User", back_populates="results")
-
+    __table_args__ = (UniqueConstraint('date', 'owner_id', name='uix_1'),)

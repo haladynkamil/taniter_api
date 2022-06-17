@@ -1,3 +1,4 @@
+import pydantic.error_wrappers
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.datastructures import UploadFile
@@ -9,6 +10,7 @@ import pandas as pd
 import io
 models.Base.metadata.create_all(bind=engine)
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError
 
 app = FastAPI()
 origins = ['http://localhost:3001', 'http://localhost:3000']
@@ -53,14 +55,27 @@ def create_item_for_user(
     results = str(fileobject.file.read().decode())
     for result in results.splitlines():
         result = result.split(',')
+        if not result[13]:
+            print('escept')
+            continue
+        print(result)
         result_dict = {
             'date': datetime.datetime.strptime(result[13], '%d/%m/%Y').date(), 'weight': result[27], 'bodyfat': result[31], 'muscle_mass': result[43],
             'water_weight': result[63], 'metabolic_age': result[61], 'intestines_fat': result[57], 'kcal': result[59]
         }
-        result = schemas.ResultCreate(**result_dict)
-        print(result)
-        crud.create_user_item(db=db, result=result, user_id=user_id)
-    return crud.create_user_item(db=db, result=result, user_id=user_id)
+        try:
+            result = schemas.ResultCreate(**result_dict)
+        except:
+            continue
+        user_results = crud.get_results_by_user(db, user_id=user_id, date=result_dict['date'])
+        print('ur', user_results)
+        print('res', result)
+        if result and not user_results:
+            try:
+                crud.create_user_item(db=db, result=result, user_id=user_id)
+            except pydantic.error_wrappers.ValidationError:
+                pass
+    return 0
 
 
 @app.get("/items/", response_model=list[schemas.Result])
