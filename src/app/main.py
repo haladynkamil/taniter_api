@@ -47,18 +47,14 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/users/{user_id}/results", response_model=schemas.Result)
-def create_item_for_user(
+@app.post("/users/{user_id}/results", status_code=201)
+def create_results_for_user(
     user_id: int, db: Session = Depends(get_db), fileobject: UploadFile = File(...),
 ):
 
     results = str(fileobject.file.read().decode())
     for result in results.splitlines():
         result = result.split(',')
-        if not result[13]:
-            print('escept')
-            continue
-        print(result)
         result_dict = {
             'date': datetime.datetime.strptime(result[13], '%d/%m/%Y').date(), 'weight': result[27], 'bodyfat': result[31], 'muscle_mass': result[43],
             'water_weight': result[63], 'metabolic_age': result[61], 'intestines_fat': result[57], 'kcal': result[59]
@@ -68,8 +64,6 @@ def create_item_for_user(
         except:
             continue
         user_results = crud.get_results_by_user(db, user_id=user_id, date=result_dict['date'])
-        print('ur', user_results)
-        print('res', result)
         if result and not user_results:
             try:
                 crud.create_user_item(db=db, result=result, user_id=user_id)
@@ -78,7 +72,7 @@ def create_item_for_user(
     return 0
 
 
-@app.get("/items/", response_model=list[schemas.Result])
-def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+@app.get("/results/", response_model=list[schemas.Result])
+def read_results(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     results = crud.get_items(db, skip=skip, limit=limit)
     return results
